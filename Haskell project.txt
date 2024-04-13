@@ -1,0 +1,59 @@
+type Cell = (Int,Int) 
+data MyState = Null | S Cell [Cell] String MyState deriving (Show,Eq)
+
+up :: MyState -> MyState
+up Null = Null
+up (S (0,_) _ _ _) = Null
+up (S (x,y) list s prev) = (S ((x-1),y) list "up" (S (x,y) list s (prev)))
+
+down :: MyState -> MyState
+down Null = Null
+down (S (3,_) _ _ _) = Null
+down (S (x,y) list s prev) = (S ((x+1),y) list "down" (S (x,y) list s (prev)))
+
+left :: MyState -> MyState
+left Null = Null
+left (S (_,0) _ _ _) = Null
+left (S (x,y) list s prev) = (S (x,(y-1)) list "left" (S (x,y) list s (prev)))
+
+right :: MyState -> MyState
+right Null = Null
+right (S (_,3) _ _ _) = Null
+right (S (x,y) list s prev) = (S (x,(y+1)) list "right" (S (x,y) list s (prev)))
+
+collect :: MyState -> MyState
+collect Null = Null
+collect (S (x,y) list s prev) = if any (isEqual (x,y)) list then collectH (S (x,y) list s prev) else Null
+
+collectH (S (x,y) list s prev) = (S (x,y) (filter (isNotEqual (x,y)) list) "collect" (S (x,y) list s (prev)))    
+isEqual (a,b) (c,d) = if a==c && b==d then True 
+                                      else False
+
+isNotEqual (a,b) (c,d) = if a==c && b==d then False 
+                                         else True
+
+nextMyStates :: MyState -> [MyState]
+nextMyStates Null = []
+nextMyStates s = filter (isNotNull) ((up s):(down s):(left s):(right s):[(collect s)])
+
+isNotNull Null = False
+isNotNull (S _ _ _ _) = True
+
+isGoal :: MyState -> Bool
+isGoal Null = False
+isGoal (S _ list _ _) = if length list == 0 then True
+                                            else False 
+
+search :: [MyState] -> MyState
+search [] = Null
+search (h:t) = if isGoal h then h
+                           else search (t ++ (nextMyStates h))
+
+constructSolution :: MyState -> [String]
+constructSolution Null = []
+constructSolution (S _ _ s prev) = if s/="" then constructSolution prev ++ [s]
+                                            else []
+solve :: Cell -> [Cell] -> [String]
+solve c [] = []
+solve c list = constructSolution (search (nextMyStates (S c list "" Null)))
+               
